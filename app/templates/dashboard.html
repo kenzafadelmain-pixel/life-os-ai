@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block heading %}Good to see you, <em class="ital">{{ (current_user_name or 'friend').split(' ')[0] }}</em>.{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('chat.index') }}" class="btn">Ask Aurora ✦</a>
+<a href="{{ url_for('mood.index') }}" class="btn">Log mood</a>
+<a href="{{ url_for('productivity.index') }}" class="btn btn--primary">Log today →</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- top stat row ------------------------------------------------------- -->
+<div class="stat-row">
+  <div class="stat">
+    <div class="stat-label">Productivity score</div>
+    <div class="stat-value gradient-text">{{ score }}<span style="font-size:0.6em;color:var(--text-mute)">/100</span></div>
+    <div class="stat-bar"><span style="width: {{ score }}%"></span></div>
+    <div class="stat-foot">Composite: focus · completion · motivation</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Tasks complete</div>
+    <div class="stat-value">{{ task_stats.done }}<span style="font-size:0.55em;color:var(--text-mute)"> / {{ task_stats.total }}</span></div>
+    <div class="stat-bar"><span style="width: {{ task_stats.completion_rate }}%; background: var(--mint);"></span></div>
+    <div class="stat-foot">{{ task_stats.completion_rate }}% completion rate</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Study this week</div>
+    <div class="stat-value">{{ (study_total_min // 60) }}<span style="font-size:0.55em;color:var(--text-mute)">h {{ study_total_min % 60 }}m</span></div>
+    <div class="stat-bar"><span style="width: {{ (study_total_min / 600 * 100) if study_total_min < 600 else 100 }}%; background: linear-gradient(90deg, var(--violet), var(--pink));"></span></div>
+    <div class="stat-foot">Across logged sessions</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Mood pulse</div>
+    <div class="stat-value">
+      {% if mood_summary.entries == 0 %}—{% else %}
+      {% if mood_summary.sentiment >= 0.25 %}😊
+      {% elif mood_summary.sentiment <= -0.25 %}😔
+      {% else %}😐{% endif %}
+      <span style="font-size: 0.5em; color: var(--text-mute);">
+        stress {{ mood_summary.stress }}/10
+      </span>
+      {% endif %}
+    </div>
+    <div class="stat-bar"><span style="width: {{ (mood_summary.motivation / 10 * 100) }}%; background: var(--pink);"></span></div>
+    <div class="stat-foot">{{ mood_summary.entries }} entries this week</div>
+  </div>
+</div>
+
+<!-- main two-column grid ----------------------------------------------- -->
+<div class="dashboard-grid">
+
+  <!-- LEFT COLUMN ===================================================== -->
+  <div>
+    <!-- Score ring + trend ------------------------------------------- -->
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <div style="display: grid; grid-template-columns: 220px 1fr; gap: 1.6rem; align-items: center;">
+
+        <div class="score-ring-card">
+          <div class="score-ring">
+            <svg viewBox="0 0 200 200">
+              <defs>
+                <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%"  stop-color="#22d3ee" />
+                  <stop offset="100%" stop-color="#a855f7" />
+                </linearGradient>
+              </defs>
+              <circle cx="100" cy="100" r="86" class="ring-bg" />
+              <circle cx="100" cy="100" r="86" class="ring-fg"
+                      stroke-dasharray="540"
+                      stroke-dashoffset="{{ 540 - (540 * score / 100) }}" />
+            </svg>
+            <div class="ring-center">
+              <span class="ring-value">{{ score }}</span>
+              <span class="ring-label">overall</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="eyebrow">// trend · last 14 days</span>
+          <h3 style="margin: 0.2rem 0 0.6rem;">Where your week is heading</h3>
+          <p class="muted" style="font-size: 0.92rem; margin-bottom: 1rem;">
+            {{ prediction.forecast.message }}
+          </p>
+          <div class="chart-wrap" style="height: 160px;">
+            <canvas id="trendChart"
+                    data-history='{{ prediction.forecast.history | tojson }}'
+                    data-forecast='{{ prediction.forecast.forecast | tojson }}'></canvas>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AI recommendations ------------------------------------------- -->
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <div>
+          <span class="eyebrow">// aurora coach</span>
+          <h3>Smart recommendations</h3>
+        </div>
+        <a href="{{ url_for('productivity.index') }}" class="muted" style="font-family: var(--font-mono); font-size: 0.8rem;">see all →</a>
+      </div>
+      <div class="reco-list" style="margin-top: 0.8rem;">
+        {% for r in recommendations %}
+        <div class="reco">
+          <div class="reco-icon">{{ r.icon }}</div>
+          <div>
+            <div class="reco-title">{{ r.title }}</div>
+            <div class="reco-body">{{ r.body | replace('**', '<strong>') | safe }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- next-up tasks ------------------------------------------------ -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <div>
+          <span class="eyebrow">// priority queue</span>
+          <h3>Next up</h3>
+        </div>
+        <a href="{{ url_for('tasks.index') }}" class="muted" style="font-family: var(--font-mono); font-size: 0.8rem;">manage board →</a>
+      </div>
+      {% if next_tasks %}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem;">
+          {% for t in next_tasks %}
+          <div class="task-card" style="cursor: default;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.6rem;">
+              <span class="task-title">{{ t.title }}</span>
+              <span class="priority-pill p{{ t.priority }}">{{ t.priority_label }}</span>
+            </div>
+            <div class="task-foot">
+              <span>{% if t.due_date %}due {{ t.due_date }}{% else %}no deadline{% endif %}</span>
+              <span>{{ t.status }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted" style="margin-top: 0.6rem;">No open tasks. Add one to start your queue.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN ==================================================== -->
+  <div>
+    <!-- Foresight tiles ---------------------------------------------- -->
+    <div style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// foresight engine</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">What's coming</h3>
+      <div class="pred-grid" style="grid-template-columns: repeat(2, 1fr);">
+
+        <div class="pred">
+          <span class="pred-tag" style="background: {{ prediction.burnout.color }}22; color: {{ prediction.burnout.color }};">
+            ● {{ prediction.burnout.label }}
+          </span>
+          <div class="pred-label">Burnout risk</div>
+          <div class="pred-value" style="color: {{ prediction.burnout.color }};">{{ prediction.burnout.risk }}<small style="font-size:0.45em;color:var(--text-mute)">/100</small></div>
+          <div class="pred-body">{{ prediction.burnout.message }}</div>
+        </div>
+
+        <div class="pred">
+          <span class="pred-tag" style="background: rgba(34,211,238,0.15); color: var(--cyan);">
+            ● {{ prediction.forecast.trend | upper }}
+          </span>
+          <div class="pred-label">7-day forecast</div>
+          <div class="pred-value gradient-text">
+            {% if prediction.forecast.forecast %}
+              {{ prediction.forecast.forecast[-1].value | round | int }}
+            {% else %}—{% endif %}
+          </div>
+          <div class="pred-body">{{ prediction.forecast.message }}</div>
+        </div>
+
+        <div class="pred">
+          <span class="pred-tag" style="background: rgba(168,85,247,0.18); color: var(--violet);">
+            ● {{ prediction.tasks.label }}
+          </span>
+          <div class="pred-label">Tasks-on-time</div>
+          <div class="pred-value" style="color: var(--violet);">{{ prediction.tasks.probability }}<small style="font-size:0.45em;color:var(--text-mute)">%</small></div>
+          <div class="pred-body">{{ prediction.tasks.message }}</div>
+        </div>
+
+        <div class="pred">
+          <span class="pred-tag" style="background: rgba(244,114,182,0.18); color: var(--pink);">
+            ● {{ prediction.emotion.label }}
+          </span>
+          <div class="pred-label">Emotional stability</div>
+          <div class="pred-value" style="color: var(--pink);">{{ prediction.emotion.score }}<small style="font-size:0.45em;color:var(--text-mute)">/100</small></div>
+          <div class="pred-body">{{ prediction.emotion.message }}</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Heatmap ------------------------------------------------------ -->
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// last 35 days</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Productivity heatmap</h3>
+      <div class="heatmap" id="heatmap" data-cells='{{ heatmap | tojson }}'></div>
+      <p class="muted" style="font-size: 0.78rem; margin-top: 0.8rem;">
+        Darker = stronger day. Log productivity daily to keep the grid alive.
+      </p>
+    </div>
+
+    <!-- Activity feed ------------------------------------------------ -->
+    <div class="card">
+      <span class="eyebrow">// recent activity</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Pulse</h3>
+      {% if activity %}
+        <div class="activity">
+          {% for a in activity %}
+          <div class="activity-row activity-{{ a.kind }}">
+            <span class="activity-kind">{{ a.kind }}</span>
+            <span>{{ a.label | truncate(60) }}</span>
+            <span class="activity-time">{{ a.ts | replace('T', ' ') | truncate(16, true, '') }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">Your activity stream will appear here after you log a task, mood, or study session.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,23 @@
+# LIFE OS AI — Python dependencies
+# -------------------------------------------------------------------
+# Hard requirements (the app boots and the core features work):
+Flask>=3.0,<4.0
+Werkzeug>=3.0,<4.0
+Jinja2>=3.1
+itsdangerous>=2.1
+click>=8.1
+
+# Optional — full feature set
+# -------------------------------------------------------------------
+# PDF text extraction for AI summarisation / flashcards
+pypdf>=4.0
+
+# DOCX extraction (for uploaded Word notes)
+python-docx>=1.1
+
+# Text-to-speech for the voice assistant (Aurora speaks back)
+gTTS>=2.5
+
+# Production WSGI server (required for Render / Railway / etc)
+gunicorn>=21.2
+# waitress>=3.0   # alternative for Windows-based hosts

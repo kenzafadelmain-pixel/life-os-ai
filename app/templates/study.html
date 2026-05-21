@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Study{% endblock %}
+{% block heading %}<em class="ital">Deep work</em> mode.{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn--primary" onclick="document.getElementById('new-subject-modal').classList.add('open')">+ Add subject</button>
+{% endblock %}
+
+{% block content %}
+
+<div class="study-grid">
+
+  <!-- LEFT — subjects, progress, recent sessions -------------------- -->
+  <div>
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// subjects · progress</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Where you are vs. where you want to be</h3>
+      {% if progress %}
+        {% for p in progress %}
+        <div class="subject-row">
+          <span class="subject-swatch" style="background: {{ p.color }}; color: {{ p.color }};"></span>
+          <div>
+            <div class="subject-name">{{ p.name }}</div>
+            <div class="subject-meta">
+              {{ p.hours_done }}h / {{ p.target_hours }}h
+              {% if p.days_to_exam is not none %}
+                · exam in <strong style="color: var(--cyan);">{{ p.days_to_exam }} day{{ 's' if p.days_to_exam != 1 else '' }}</strong>
+              {% endif %}
+            </div>
+            <div class="progress"><span style="width: {{ p.progress_pct }}%; background: {{ p.color }};"></span></div>
+          </div>
+          <form method="POST" action="{{ url_for('study.delete_subject', subject_id=p.id) }}"
+                onsubmit="return confirm('Remove this subject?')">
+            <button type="submit" class="icon-btn" aria-label="Remove">×</button>
+          </form>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">No subjects yet. Add one to get an AI-planned study week.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <span class="eyebrow">// recent sessions</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Logbook</h3>
+      {% if sessions %}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          {% for s in sessions[:8] %}
+          <div style="display: grid; grid-template-columns: 120px 1fr 60px; gap: 0.8rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line-soft);">
+            <span class="mono muted" style="font-size: 0.78rem;">{{ s.started_at | replace('T',' ') | truncate(16, true, '') }}</span>
+            <span>{{ s.subject_name or 'General' }}<span class="muted" style="font-size:0.78rem;"> · focus {{ s.focus_score }}/10</span></span>
+            <span class="mono" style="text-align: right; font-size: 0.82rem;">{{ s.duration_min }}m</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">No sessions logged. Use the Pomodoro on the right →</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- RIGHT — pomodoro + plan -------------------------------------- -->
+  <div>
+    <div class="pomodoro" style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// pomodoro · focus block</span>
+      <div class="pom-ring" style="margin: 1rem 0;">
+        <svg viewBox="0 0 240 240">
+          <defs>
+            <linearGradient id="pom-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#22d3ee" />
+              <stop offset="100%" stop-color="#a855f7" />
+            </linearGradient>
+          </defs>
+          <circle cx="120" cy="120" r="106" class="pom-bg"/>
+          <circle cx="120" cy="120" r="106" class="pom-fg"
+                  stroke-dasharray="666" stroke-dashoffset="0" id="pom-fg-circle"/>
+        </svg>
+        <div class="pom-time" id="pom-time">25:00</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; width: 100%; max-width: 320px;">
+        <select class="select" id="pom-subject">
+          <option value="">No subject</option>
+          {% for s in subjects %}
+            <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+        <select class="select" id="pom-length">
+          <option value="25" selected>25 min · classic</option>
+          <option value="50">50 min · deep block</option>
+          <option value="15">15 min · quick</option>
+          <option value="5">5 min · test</option>
+        </select>
+      </div>
+
+      <div class="pom-controls">
+        <button class="btn btn--primary" id="pom-start">Start ▶</button>
+        <button class="btn" id="pom-pause" disabled>Pause</button>
+        <button class="btn btn--ghost" id="pom-reset">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="eyebrow">// aurora · this week</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Suggested plan</h3>
+      {% if plan %}
+        {% for d in plan %}
+        <div class="plan-day">
+          <div class="plan-date">
+            <div style="color: var(--text);">{{ d.weekday[:3] }}</div>
+            <div>{{ d.date }}</div>
+          </div>
+          <div class="plan-blocks">
+            {% for b in d.blocks %}
+              <span class="plan-pill" style="background: {{ b.color }};">{{ b.subject }} · {{ b.minutes }}m</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">Add a subject and Aurora will plan your week.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- new subject modal -------------------------------------------------- -->
+<div class="modal-overlay" id="new-subject-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <span class="eyebrow">// new subject</span>
+    <h2 style="margin: 0.2rem 0 1.2rem;">Add a study track</h2>
+    <form method="POST" action="{{ url_for('study.add_subject') }}">
+      <div class="field">
+        <label for="name">Name</label>
+        <input class="input" type="text" id="name" name="name" required autofocus />
+      </div>
+      <div class="field-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem;">
+        <div class="field">
+          <label for="target_hours">Target hours</label>
+          <input class="input" type="number" id="target_hours" name="target_hours" min="1" step="0.5" value="10" />
+        </div>
+        <div class="field">
+          <label for="exam_date">Exam date (optional)</label>
+          <input class="input" type="date" id="exam_date" name="exam_date" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.6rem; justify-content: flex-end;">
+        <button type="button" class="btn" onclick="document.getElementById('new-subject-modal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn--primary">Add →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/study.js') }}"></script>
+{% endblock %}

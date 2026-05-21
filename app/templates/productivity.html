@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Productivity{% endblock %}
+{% block heading %}<em class="ital">Signal</em> &amp; foresight.{% endblock %}
+
+{% block content %}
+
+<div class="stat-row">
+  <div class="stat">
+    <div class="stat-label">Productivity score</div>
+    <div class="stat-value gradient-text">{{ score }}<span style="font-size:0.5em;color:var(--text-mute)">/100</span></div>
+    <div class="stat-bar"><span style="width: {{ score }}%"></span></div>
+    <div class="stat-foot">Composite of focus, completion, motivation</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Burnout risk</div>
+    <div class="stat-value" style="color: {{ prediction.burnout.color }};">{{ prediction.burnout.risk }}<span style="font-size:0.5em;color:var(--text-mute)">/100</span></div>
+    <div class="stat-foot">{{ prediction.burnout.label }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">7-day forecast</div>
+    <div class="stat-value" style="color: var(--cyan);">{{ prediction.forecast.trend | upper }}</div>
+    <div class="stat-foot">slope {{ prediction.forecast.slope or 0 }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Weekly avg</div>
+    <div class="stat-value">{{ weekly_avg }}<span style="font-size:0.5em;color:var(--text-mute)">/100</span></div>
+    <div class="stat-foot">Last 7 days of logs</div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+
+  <!-- LEFT — log + chart -------------------------------------------- -->
+  <div>
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// log today</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">How did the day actually go?</h3>
+      <p class="muted" style="margin-bottom: 0.8rem;">Honest beats optimistic. The forecast learns from this.</p>
+      <form method="POST" action="{{ url_for('productivity.log') }}" class="prod-form">
+        <div class="field">
+          <label>Focus min</label>
+          <input class="input" type="number" name="focus_minutes" min="0" max="900" value="120" />
+        </div>
+        <div class="field">
+          <label>Deep work min</label>
+          <input class="input" type="number" name="deep_work_min" min="0" max="600" value="60" />
+        </div>
+        <div class="field">
+          <label>Breaks min</label>
+          <input class="input" type="number" name="breaks_min" min="0" max="300" value="30" />
+        </div>
+        <div class="field">
+          <label>Sleep (h)</label>
+          <input class="input" type="number" name="sleep_hours" min="0" max="14" step="0.5" value="7" />
+        </div>
+        <div class="field">
+          <label>Self-score (0–100)</label>
+          <input class="input" type="number" name="productivity" min="0" max="100" value="65" />
+        </div>
+        <button type="submit" class="btn btn--primary" style="grid-column: -2 / -1;">Save log</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// 14-day trend + 7-day forecast</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">{{ prediction.forecast.message }}</h3>
+      <div class="chart-wrap" style="height: 280px;">
+        <canvas id="forecastChart"
+                data-history='{{ prediction.forecast.history | tojson }}'
+                data-forecast='{{ prediction.forecast.forecast | tojson }}'></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="eyebrow">// aurora coach</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">What to change this week</h3>
+      <div class="reco-list" style="margin-top: 0.4rem;">
+        {% for r in recommendations %}
+        <div class="reco">
+          <div class="reco-icon">{{ r.icon }}</div>
+          <div>
+            <div class="reco-title">{{ r.title }}</div>
+            <div class="reco-body">{{ r.body | replace('**', '<strong>') | safe }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT — prediction tiles + heatmap ---------------------------- -->
+  <div>
+    <div class="pred-grid" style="grid-template-columns: repeat(2,1fr); margin-bottom: 1.4rem;">
+      <div class="pred">
+        <span class="pred-tag" style="background: {{ prediction.burnout.color }}22; color: {{ prediction.burnout.color }};">● {{ prediction.burnout.label }}</span>
+        <div class="pred-label">Burnout</div>
+        <div class="pred-value" style="color: {{ prediction.burnout.color }};">{{ prediction.burnout.risk }}</div>
+        <div class="pred-body">{{ prediction.burnout.message }}</div>
+        <div class="muted mono" style="font-size: 0.74rem; margin-top: 0.6rem;">
+          stress {{ prediction.burnout.inputs.avg_stress }} · sleep {{ prediction.burnout.inputs.avg_sleep_hours }}h
+        </div>
+      </div>
+      <div class="pred">
+        <span class="pred-tag" style="background: rgba(168,85,247,0.18); color: var(--violet);">● {{ prediction.tasks.label }}</span>
+        <div class="pred-label">Tasks on time</div>
+        <div class="pred-value" style="color: var(--violet);">{{ prediction.tasks.probability }}<small style="font-size:0.5em">%</small></div>
+        <div class="pred-body">{{ prediction.tasks.message }}</div>
+      </div>
+      <div class="pred">
+        <span class="pred-tag" style="background: rgba(244,114,182,0.18); color: var(--pink);">● {{ prediction.emotion.label }}</span>
+        <div class="pred-label">Emotional stability</div>
+        <div class="pred-value" style="color: var(--pink);">{{ prediction.emotion.score }}</div>
+        <div class="pred-body">{{ prediction.emotion.message }}</div>
+      </div>
+      <div class="pred">
+        <span class="pred-tag" style="background: rgba(34,211,238,0.15); color: var(--cyan);">● {{ prediction.forecast.trend | upper }}</span>
+        <div class="pred-label">Forecast</div>
+        <div class="pred-value gradient-text">
+          {% if prediction.forecast.forecast %}{{ prediction.forecast.forecast[-1].value | round | int }}{% else %}—{% endif %}
+        </div>
+        <div class="pred-body">7 days from now (projected)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="eyebrow">// last 35 days</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Heatmap</h3>
+      <div class="heatmap" id="heatmap" data-cells='{{ heatmap | tojson }}'></div>
+      <p class="muted" style="font-size: 0.78rem; margin-top: 0.8rem;">
+        Each cell is a day. Brighter = higher productivity. Log daily for the cleanest signal.
+      </p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+  // forecastChart shares the same renderer as the dashboard's trendChart.
+  document.getElementById('trendChart')?.remove(); // avoid re-init clash if any
+</script>
+{% endblock %}

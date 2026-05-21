@@ -1,0 +1,21 @@
+{# Renders one task card. Expects variable `t` in scope. #}
+<div class="task-card" draggable="true" data-task-id="{{ t.id }}" data-status="{{ t.status }}">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+    <div class="task-title">{{ t.title }}</div>
+    <span class="priority-pill p{{ t.priority }}">{{ t.priority_label }}</span>
+  </div>
+  {% if t.description %}
+    <div class="task-desc">{{ t.description | truncate(120) }}</div>
+  {% endif %}
+  <div class="task-foot">
+    <span class="{% if t.is_overdue %}task-overdue{% endif %}">
+      {% if t.due_date %}due {{ t.due_date }}{% else %}no deadline{% endif %}
+    </span>
+    <span class="task-card-actions">
+      <form method="POST" action="{{ url_for('tasks.delete', task_id=t.id) }}" style="display:inline;"
+            onsubmit="return confirm('Delete this task?')">
+        <button type="submit" class="icon-btn" title="Delete" aria-label="Delete">×</button>
+      </form>
+    </span>
+  </div>
+</div>

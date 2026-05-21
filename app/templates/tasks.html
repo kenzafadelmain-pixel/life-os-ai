@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Tasks{% endblock %}
+{% block heading %}Your <em class="ital">board</em>.{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn--primary" onclick="document.getElementById('new-task-modal').classList.add('open')">+ New task</button>
+{% endblock %}
+
+{% block content %}
+
+<div class="stat-row">
+  <div class="stat">
+    <div class="stat-label">Total</div>
+    <div class="stat-value">{{ stats.total }}</div>
+    <div class="stat-foot">All tasks on your board</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">To do</div>
+    <div class="stat-value" style="color: var(--text-soft);">{{ stats.todo }}</div>
+    <div class="stat-foot">Queued, awaiting start</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">In progress</div>
+    <div class="stat-value" style="color: var(--cyan);">{{ stats.doing }}</div>
+    <div class="stat-foot">Currently active</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Completion rate</div>
+    <div class="stat-value" style="color: var(--mint);">{{ stats.completion_rate }}<span style="font-size:0.55em">%</span></div>
+    <div class="stat-bar"><span style="width: {{ stats.completion_rate }}%; background: var(--mint);"></span></div>
+    <div class="stat-foot">{{ stats.done }} tasks closed</div>
+  </div>
+</div>
+
+<div class="task-grid" id="task-board">
+
+  <div class="task-column" data-status="todo">
+    <h3>To do <span class="count">{{ board.todo | length }}</span></h3>
+    {% for t in board.todo %}{% include "_task_card.html" %}{% endfor %}
+    {% if not board.todo %}<p class="muted" style="font-size: 0.86rem;">Drag tasks here, or add a new one.</p>{% endif %}
+  </div>
+
+  <div class="task-column" data-status="doing">
+    <h3>In progress <span class="count">{{ board.doing | length }}</span></h3>
+    {% for t in board.doing %}{% include "_task_card.html" %}{% endfor %}
+    {% if not board.doing %}<p class="muted" style="font-size: 0.86rem;">Pick something from "to do" and drop it here.</p>{% endif %}
+  </div>
+
+  <div class="task-column" data-status="done">
+    <h3>Done <span class="count">{{ board.done | length }}</span></h3>
+    {% for t in board.done %}{% include "_task_card.html" %}{% endfor %}
+    {% if not board.done %}<p class="muted" style="font-size: 0.86rem;">Completed tasks land here.</p>{% endif %}
+  </div>
+
+</div>
+
+<!-- new task modal ------------------------------------------------------ -->
+<div class="modal-overlay" id="new-task-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <span class="eyebrow">// new task</span>
+    <h2 style="margin: 0.2rem 0 1.2rem;">Add to the board</h2>
+    <form method="POST" action="{{ url_for('tasks.create') }}">
+      <div class="field">
+        <label for="title">Title</label>
+        <input class="input" type="text" id="title" name="title" required autofocus />
+      </div>
+      <div class="field">
+        <label for="description">Description (optional)</label>
+        <textarea class="textarea" id="description" name="description" rows="3"></textarea>
+      </div>
+      <div class="field-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem;">
+        <div class="field">
+          <label for="priority">Priority</label>
+          <select class="select" id="priority" name="priority">
+            {% for p, lbl in priority_labels.items() %}
+              <option value="{{ p }}" {% if p==2 %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="due_date">Due date (optional)</label>
+          <input class="input" type="date" id="due_date" name="due_date" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 0.8rem;">
+        <button type="button" class="btn"
+                onclick="document.getElementById('new-task-modal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn--primary">Add task →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+{% endblock %}

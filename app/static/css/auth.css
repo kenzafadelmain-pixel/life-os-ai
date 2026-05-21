@@ -1,0 +1,106 @@
+/* LIFE OS AI — auth pages */
+
+.auth-body { min-height: 100vh; }
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+}
+@media (max-width: 880px) {
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-aside { display: none; }
+}
+
+.auth-aside {
+  padding: 2rem 3vw 2.4rem;
+  border-right: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, rgba(12,13,24,0.85), rgba(12,13,24,0.3));
+  backdrop-filter: blur(20px);
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.auth-aside::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(60% 50% at 30% 80%, rgba(168,85,247,0.25), transparent 60%),
+    radial-gradient(50% 40% at 80% 10%, rgba(34,211,238,0.20), transparent 60%);
+  pointer-events: none;
+}
+
+.auth-brand {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  font-family: var(--font-display); font-size: 1.18rem; font-weight: 600;
+  color: var(--text);
+}
+.auth-brand em {
+  font-style: italic;
+  background: var(--grad-aurora);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.auth-poem {
+  max-width: 460px;
+  position: relative; z-index: 1;
+}
+.auth-poem h2 {
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0.6rem 0 1rem;
+}
+.auth-poem h2 em.ital { font-style: italic; color: var(--cyan); }
+.auth-poem p { color: var(--text-soft); margin-bottom: 1.6rem; max-width: 400px; }
+
+.auth-marks {
+  display: flex; gap: 0.6rem; flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+.auth-marks span {
+  border: 1px solid var(--line);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--glass-soft);
+}
+
+/* right panel */
+.auth-panel {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 3rem 3vw;
+  position: relative;
+}
+
+.auth-form-wrap {
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+}
+.auth-form-wrap h1 {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 500;
+  margin: 0.4rem 0 0.4rem;
+}
+.auth-form-wrap p.muted { margin-bottom: 1.6rem; }
+
+.auth-form .btn--primary { margin-top: 0.6rem; }
+.btn--block { width: 100%; justify-content: center; }
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+@media (max-width: 480px) { .field-row { grid-template-columns: 1fr; } }
+
+.auth-alt {
+  margin-top: 1.6rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-mute);
+}

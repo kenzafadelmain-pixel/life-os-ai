@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block heading %}<em class="ital">Console</em> settings.{% endblock %}
+
+{% block content %}
+<div class="settings-grid">
+
+  <!-- profile ----------------------------------------------- -->
+  <div class="card">
+    <span class="eyebrow">// profile</span>
+    <h3 style="margin: 0.2rem 0 0.8rem;">Who you are</h3>
+    <form method="POST" action="{{ url_for('settings.profile') }}">
+      <div class="field">
+        <label for="name">Display name</label>
+        <input class="input" type="text" id="name" name="name" value="{{ user.name }}" required minlength="2" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input class="input" type="email" value="{{ user.email }}" disabled style="opacity:0.6;" />
+      </div>
+      <div class="field">
+        <label for="avatar_seed">Avatar style</label>
+        <select class="select" id="avatar_seed" name="avatar_seed">
+          <option value="spark"    {% if user.avatar_seed=='spark' %}selected{% endif %}>Spark</option>
+          <option value="aurora"   {% if user.avatar_seed=='aurora' %}selected{% endif %}>Aurora</option>
+          <option value="nebula"   {% if user.avatar_seed=='nebula' %}selected{% endif %}>Nebula</option>
+          <option value="prism"    {% if user.avatar_seed=='prism' %}selected{% endif %}>Prism</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn--primary">Save profile</button>
+    </form>
+  </div>
+
+  <!-- password ---------------------------------------------- -->
+  <div class="card">
+    <span class="eyebrow">// security</span>
+    <h3 style="margin: 0.2rem 0 0.8rem;">Change password</h3>
+    <form method="POST" action="{{ url_for('settings.password') }}">
+      <div class="field">
+        <label for="new_password">New password</label>
+        <input class="input" type="password" id="new_password" name="new_password" required minlength="8" />
+      </div>
+      <div class="field">
+        <label for="confirm_password">Confirm</label>
+        <input class="input" type="password" id="confirm_password" name="confirm_password" required minlength="8" />
+      </div>
+      <button type="submit" class="btn btn--primary">Update password</button>
+    </form>
+  </div>
+
+  <!-- preferences ------------------------------------------- -->
+  <div class="card">
+    <span class="eyebrow">// preferences</span>
+    <h3 style="margin: 0.2rem 0 0.8rem;">Aurora's behaviour</h3>
+    <form method="POST" action="{{ url_for('settings.preferences') }}">
+      <div class="field">
+        <label for="ai_provider">AI provider</label>
+        <select class="select" id="ai_provider" name="ai_provider">
+          <option value="local"  {% if settings.ai_provider=='local'  %}selected{% endif %}>Local (no API key)</option>
+          <option value="openai" {% if settings.ai_provider=='openai' %}selected{% endif %}>OpenAI</option>
+          <option value="gemini" {% if settings.ai_provider=='gemini' %}selected{% endif %}>Google Gemini</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="theme">Theme</label>
+        <select class="select" id="theme" name="theme">
+          <option value="aurora" {% if settings.theme=='aurora' %}selected{% endif %}>Aurora · default</option>
+          <option value="nebula" {% if settings.theme=='nebula' %}selected{% endif %}>Nebula · violet-heavy</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="coach_tone">Coach tone</label>
+        <select class="select" id="coach_tone" name="coach_tone">
+          <option value="supportive" {% if settings.coach_tone=='supportive' %}selected{% endif %}>Supportive</option>
+          <option value="direct"     {% if settings.coach_tone=='direct'     %}selected{% endif %}>Direct</option>
+          <option value="playful"    {% if settings.coach_tone=='playful'    %}selected{% endif %}>Playful</option>
+        </select>
+      </div>
+      <div class="field" style="flex-direction: row; align-items: center; gap: 0.6rem;">
+        <input type="checkbox" id="notifications" name="notifications" {% if settings.notifications %}checked{% endif %} />
+        <label for="notifications" style="margin: 0;">Enable in-app notifications</label>
+      </div>
+      <button type="submit" class="btn btn--primary">Save preferences</button>
+    </form>
+  </div>
+
+  <!-- memory ------------------------------------------------ -->
+  <div class="card">
+    <span class="eyebrow">// aurora memory</span>
+    <h3 style="margin: 0.2rem 0 0.4rem;">What Aurora remembers</h3>
+    <p class="muted" style="font-size: 0.86rem; margin-bottom: 0.8rem;">
+      Long-term facts that get prepended to every chat. Example: <em>focus_hours → 4pm-7pm</em>.
+    </p>
+    <form method="POST" action="{{ url_for('settings.memory_add') }}" style="display: grid; grid-template-columns: 140px 1fr auto; gap: 0.5rem; margin-bottom: 0.8rem;">
+      <input class="input" type="text" name="key"   placeholder="key"   required />
+      <input class="input" type="text" name="value" placeholder="value" required />
+      <button type="submit" class="btn btn--primary">+</button>
+    </form>
+    {% if memory %}
+      {% for m in memory %}
+      <div class="memory-row">
+        <span class="memory-key">{{ m.key }}</span>
+        <span>{{ m.value }}</span>
+        <form method="POST" action="{{ url_for('settings.memory_forget') }}" style="display:inline;">
+          <input type="hidden" name="key" value="{{ m.key }}" />
+          <button type="submit" class="icon-btn" title="Forget" aria-label="Forget">×</button>
+        </form>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted" style="font-size: 0.86rem;">No memories yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- automations ------------------------------------------ -->
+  <div class="card" style="grid-column: 1 / -1;">
+    <span class="eyebrow">// automation engine</span>
+    <h3 style="margin: 0.2rem 0 0.8rem;">Run a job</h3>
+    <p class="muted" style="font-size: 0.88rem; margin-bottom: 0.8rem;">
+      Pluggable automations. Each one runs locally and logs its result inline.
+    </p>
+    {% for a in automations %}
+    <div class="automation-row">
+      <div>
+        <div style="font-weight: 600;">{{ a.name }}</div>
+        <div class="muted" style="font-size: 0.85rem;">{{ a.description }}</div>
+      </div>
+      <button class="btn btn--primary"
+              onclick="runAutomation('{{ a.key }}', this)">Run →</button>
+    </div>
+    {% endfor %}
+    <div id="automation-log" style="margin-top: 0.8rem; font-family: var(--font-mono); font-size: 0.84rem;"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function runAutomation(key, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Running…';
+    try {
+      const resp = await fetch(`/app/settings/automation/${key}`, { method: 'POST' });
+      const data = await resp.json();
+      const log = document.getElementById('automation-log');
+      const line = document.createElement('div');
+      line.style.color = data.ok ? 'var(--mint)' : 'var(--coral)';
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${key} → ${data.message || data.error}`;
+      log.prepend(line);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Run →';
+    }
+  }
+</script>
+{% endblock %}

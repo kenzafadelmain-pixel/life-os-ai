@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Aurora Chat{% endblock %}
+{% block heading %}Talk to <em class="ital">Aurora</em>.{% endblock %}
+
+{% block topbar_actions %}
+<form method="POST" action="{{ url_for('chat.new_session') }}" style="display:inline;">
+  <button type="submit" class="btn btn--primary">+ New chat</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="chat-shell">
+
+  <!-- session list ---------------------------------------------------- -->
+  <aside class="chat-sidebar">
+    <h4>// sessions</h4>
+    {% if sessions %}
+      {% for s in sessions %}
+        <a href="{{ url_for('chat.index', session=s.id) }}"
+           class="chat-session-item {% if s.id == active_id %}active{% endif %}">
+          <span>{{ s.title | truncate(28) }}</span>
+          <form method="POST" action="{{ url_for('chat.delete_session', session_id=s.id) }}"
+                onsubmit="return confirm('Delete this conversation?')">
+            <button type="submit" class="del" aria-label="delete">×</button>
+          </form>
+        </a>
+      {% endfor %}
+    {% else %}
+      <p class="muted" style="padding: 0.6rem; font-size: 0.86rem;">No conversations yet. Start one →</p>
+    {% endif %}
+  </aside>
+
+  <!-- main panel ------------------------------------------------------ -->
+  <section class="chat-panel">
+    <header class="chat-panel-header">
+      <div>
+        <span class="eyebrow">// aurora · core</span>
+        <h3 style="margin: 0.1rem 0 0;">Conversation</h3>
+      </div>
+      <span class="chat-provider-pill" id="provider-pill">{{ provider }}</span>
+    </header>
+
+    <div class="messages" id="messages" data-session-id="{{ active_id or '' }}">
+      {% if not messages %}
+        <div class="message assistant">
+          <div class="who">A</div>
+          <div class="bubble">
+            <p>Hey — I'm <strong>Aurora</strong>, the AI core of LIFE OS.</p>
+            <p>Tell me what you're working on, what's draining you, or where you'd like a plan.
+               I remember our past chats and the patterns showing up across your modules.</p>
+          </div>
+        </div>
+      {% else %}
+        {% for m in messages %}
+          <div class="message {{ m.role }}">
+            <div class="who">{% if m.role == 'assistant' %}A{% else %}{{ (current_user_name or 'U')[:1] | upper }}{% endif %}</div>
+            <div class="bubble" data-md>{{ m.content }}</div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <div class="composer">
+      <button type="button" class="mic-btn" id="mic-btn" title="Hold to speak" aria-label="Voice input">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-3.07A7 7 0 0 0 19 11h-2z" fill="currentColor"/></svg>
+      </button>
+      <textarea id="composer-input" placeholder="Ask Aurora anything — Enter to send, Shift+Enter for newline." rows="1"></textarea>
+      <button type="button" class="send-btn" id="send-btn" aria-label="Send">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 12l18-9-4.5 18L13 14l-3-1-7-1z" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

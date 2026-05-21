@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Files{% endblock %}
+{% block heading %}<em class="ital">Files</em> &amp; notes.{% endblock %}
+
+{% block content %}
+
+<div class="card" style="margin-bottom: 1.4rem;">
+  <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center;">
+    <div>
+      <span class="eyebrow">// upload</span>
+      <h3 style="margin: 0.2rem 0 0.4rem;">Drop a PDF — get a summary &amp; flashcards.</h3>
+      <p class="muted" style="margin: 0;">Supported: PDF, TXT, MD, DOCX, PNG, JPG. Max 32 MB.</p>
+    </div>
+    <form method="POST" action="{{ url_for('files.upload') }}" enctype="multipart/form-data"
+          style="display: flex; gap: 0.6rem; align-items: center;">
+      <label for="file" class="btn">Choose file</label>
+      <input type="file" name="file" id="file" required style="display:none;" onchange="this.form.submit();" />
+    </form>
+  </div>
+</div>
+
+{% if files %}
+<div class="files-grid">
+  {% for f in files %}
+  <div class="file-tile">
+    <div class="file-head">
+      <span class="file-name">{{ f.original_name }}</span>
+      <span class="file-ext">{{ f.file_type }}</span>
+    </div>
+    <div class="muted mono" style="font-size: 0.78rem;">
+      {{ (f.size_bytes / 1024) | round(1) }} KB · {{ f.uploaded_at | replace('T',' ') | truncate(16, true, '') }}
+    </div>
+    <div class="file-summary">
+      {% if f.summary %}
+        {{ f.summary | truncate(280) }}
+      {% else %}
+        <em class="muted">No summary available for this file type.</em>
+      {% endif %}
+    </div>
+    <div class="file-actions">
+      <a href="{{ url_for('files.download', file_id=f.id) }}" class="btn">Download</a>
+      <button class="btn" onclick="loadFlashcards({{ f.id }}, '{{ f.original_name | e }}')">Flashcards</button>
+      <form method="POST" action="{{ url_for('files.delete', file_id=f.id) }}" style="display:inline;"
+            onsubmit="return confirm('Delete this file permanently?')">
+        <button type="submit" class="btn btn--ghost btn--danger">Delete</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 3rem;">
+  <h3 style="margin: 0 0 0.4rem;">Your library is empty.</h3>
+  <p class="muted">Upload a study PDF above to see what the AI summariser does.</p>
+</div>
+{% endif %}
+
+<!-- Flashcard modal ---------------------------------------------------- -->
+<div class="modal-overlay" id="flash-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="width: min(620px, 94vw);">
+    <span class="eyebrow">// flashcards</span>
+    <h2 style="margin: 0.2rem 0 0.4rem;" id="flash-title">Loading…</h2>
+    <div id="flash-cards" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.8rem;"></div>
+    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+      <button class="btn" onclick="document.getElementById('flash-modal').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/files.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "auth/_shell.html" %}
+{% block title %}Create your console{% endblock %}
+
+{% block auth_content %}
+<div class="auth-form-wrap">
+  <span class="eyebrow">// boot sequence</span>
+  <h1>Create your console.</h1>
+  <p class="muted">Fifteen seconds. No credit card. Aurora wakes the moment you finish.</p>
+
+  <form method="POST" class="auth-form">
+    <div class="field">
+      <label for="name">Your name</label>
+      <input class="input" type="text" name="name" id="name" value="{{ name or '' }}" required minlength="2" />
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input class="input" type="email" name="email" id="email" value="{{ email or '' }}" required />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="password">Password</label>
+        <input class="input" type="password" name="password" id="password" required minlength="8" />
+      </div>
+      <div class="field">
+        <label for="confirm">Confirm</label>
+        <input class="input" type="password" name="confirm" id="confirm" required minlength="8" />
+      </div>
+    </div>
+    <button type="submit" class="btn btn--primary btn--block">Boot LIFE OS →</button>
+  </form>
+
+  <p class="auth-alt">
+    Already have a console? <a href="{{ url_for('auth.login') }}">Sign in</a>.
+  </p>
+</div>
+{% endblock %}

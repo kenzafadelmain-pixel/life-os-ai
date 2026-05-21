@@ -1,0 +1,119 @@
+{# Layout for authenticated app pages — sidebar + top bar + content. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{% block title %}{{ APP_NAME }}{% endblock %} — {{ APP_NAME }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+{% block head_extra %}{% endblock %}
+</head>
+<body class="app-body theme-aurora">
+
+<div class="aurora-bg" aria-hidden="true">
+  <div class="aurora-blob aurora-blob--violet"></div>
+  <div class="aurora-blob aurora-blob--cyan"></div>
+  <div class="aurora-blob aurora-blob--pink"></div>
+  <div class="grain"></div>
+</div>
+
+<aside class="sidebar">
+  <a href="{{ url_for('dashboard.index') }}" class="brand">
+    <span class="brand-mark">
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#22d3ee" />
+            <stop offset="100%" stop-color="#a855f7" />
+          </linearGradient>
+        </defs>
+        <circle cx="16" cy="16" r="13" fill="none" stroke="url(#g1)" stroke-width="2" />
+        <circle cx="16" cy="16" r="5" fill="url(#g1)" />
+      </svg>
+    </span>
+    <span class="brand-name">LIFE <em>OS</em></span>
+  </a>
+
+  <nav class="nav">
+    <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint=='dashboard.index' %}active{% endif %}">
+      <span class="nav-icon">◎</span> Dashboard
+    </a>
+    <a href="{{ url_for('chat.index') }}" class="nav-link {% if request.blueprint=='chat' %}active{% endif %}">
+      <span class="nav-icon">✦</span> Aurora Chat
+    </a>
+    <a href="{{ url_for('tasks.index') }}" class="nav-link {% if request.blueprint=='tasks' %}active{% endif %}">
+      <span class="nav-icon">◧</span> Tasks
+    </a>
+    <a href="{{ url_for('study.index') }}" class="nav-link {% if request.blueprint=='study' %}active{% endif %}">
+      <span class="nav-icon">⌬</span> Study
+    </a>
+    <a href="{{ url_for('mood.index') }}" class="nav-link {% if request.blueprint=='mood' %}active{% endif %}">
+      <span class="nav-icon">❍</span> Mood
+    </a>
+    <a href="{{ url_for('productivity.index') }}" class="nav-link {% if request.blueprint=='productivity' %}active{% endif %}">
+      <span class="nav-icon">⌖</span> Productivity
+    </a>
+    <a href="{{ url_for('files.index') }}" class="nav-link {% if request.blueprint=='files' %}active{% endif %}">
+      <span class="nav-icon">▤</span> Files
+    </a>
+    <a href="{{ url_for('settings.index') }}" class="nav-link {% if request.blueprint=='settings' %}active{% endif %}">
+      <span class="nav-icon">⌥</span> Settings
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">{{ (current_user_name or 'U')[:1] | upper }}</div>
+      <div class="user-meta">
+        <div class="user-name">{{ current_user_name or 'You' }}</div>
+        <a href="{{ url_for('auth.logout') }}" class="user-logout">Sign out</a>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-title">
+      <span class="topbar-eyebrow">// {{ APP_NAME }}</span>
+      <h1>{% block heading %}{% endblock %}</h1>
+    </div>
+    <div class="topbar-actions">
+      {% block topbar_actions %}{% endblock %}
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack">
+        {% for category, msg in messages %}
+          <div class="flash flash--{{ category }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <section class="content">
+    {% block content %}{% endblock %}
+  </section>
+
+  <footer class="app-footer">
+    <span>&copy; 2026 LIFE OS AI — graduation project demo.</span>
+    <span class="kbd-hint">⌘K to summon Aurora</span>
+  </footer>
+</main>
+
+<div id="aurora-launcher" class="aurora-launcher" title="Open Aurora">
+  <button id="aurora-launcher-btn" aria-label="Open Aurora assistant">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2 14 9l7 2-7 2-2 7-2-7-7-2 7-2 2-7z" fill="currentColor"/></svg>
+  </button>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Mood{% endblock %}
+{% block heading %}<em class="ital">Pulse</em> check.{% endblock %}
+
+{% block content %}
+<div class="mood-grid">
+
+  <!-- LEFT — journal entry form + history ---------------------------- -->
+  <div>
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// write · reflect</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">What's on your mind?</h3>
+      <p class="muted" style="margin-bottom: 0.8rem;">
+        Free-write a few sentences. Aurora will reflect the emotion, stress, and motivation back.
+        Nothing leaves your local database.
+      </p>
+      <form method="POST" action="{{ url_for('mood.journal') }}">
+        <div class="field">
+          <label for="journal">Journal</label>
+          <textarea class="textarea" id="journal" name="journal" rows="6"
+                    placeholder="Today I noticed…" required></textarea>
+        </div>
+
+        <!-- Live analysis preview -->
+        <div id="live-analysis" style="display:none; margin-bottom: 0.8rem;">
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;">
+            <span class="emotion-pill" id="la-emotion">—</span>
+            <span class="mono muted" id="la-sentiment">sentiment 0.0</span>
+            <span class="mono muted" id="la-stress">stress 5</span>
+            <span class="mono muted" id="la-motivation">motivation 5</span>
+          </div>
+          <p class="muted" style="font-size: 0.86rem; margin-top: 0.5rem;" id="la-summary"></p>
+        </div>
+
+        <button type="submit" class="btn btn--primary">Save reflection →</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <span class="eyebrow">// history</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Recent entries</h3>
+      {% if entries %}
+        {% for e in entries %}
+        <div class="journal-entry">
+          <div style="display: flex; gap: 0.6rem; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span class="emotion-pill emo-{{ e.emotion }}">{{ e.emotion }}</span>
+            <span class="when">{{ e.created_at | replace('T',' ') | truncate(16, true, '') }}</span>
+          </div>
+          <p style="margin: 0.4rem 0; color: var(--text);">{{ e.journal | truncate(220) }}</p>
+          <div class="mono muted" style="font-size: 0.78rem;">
+            stress {{ e.stress_level }}/10 · motivation {{ e.motivation }}/10 · sentiment {{ e.sentiment }}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">No entries yet. Write one on the left to start tracking.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- RIGHT — summary + trend chart ---------------------------------- -->
+  <div>
+    <div class="card" style="margin-bottom: 1.4rem;">
+      <span class="eyebrow">// this week</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Average pulse</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem;">
+        <div>
+          <div class="mono muted" style="font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase;">Sentiment</div>
+          <div class="display" style="font-size: 1.8rem; color: var(--cyan);">{{ weekly.sentiment }}</div>
+        </div>
+        <div>
+          <div class="mono muted" style="font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase;">Stress</div>
+          <div class="display" style="font-size: 1.8rem; color: var(--gold);">{{ weekly.stress }}<small style="font-size:0.5em">/10</small></div>
+        </div>
+        <div>
+          <div class="mono muted" style="font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase;">Motivation</div>
+          <div class="display" style="font-size: 1.8rem; color: var(--violet);">{{ weekly.motivation }}<small style="font-size:0.5em">/10</small></div>
+        </div>
+      </div>
+      <div class="muted" style="font-size: 0.82rem; margin-top: 0.6rem;">From {{ weekly.entries }} entries</div>
+    </div>
+
+    <div class="card">
+      <span class="eyebrow">// trend · 14 days</span>
+      <h3 style="margin: 0.2rem 0 0.8rem;">Where your week is heading</h3>
+      <div class="chart-wrap" style="height: 260px;">
+        <canvas id="moodChart" data-trend='{{ trend | tojson }}'></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/mood.js') }}"></script>
+{% endblock %}

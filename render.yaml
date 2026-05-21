@@ -1,0 +1,45 @@
+# LIFE OS AI — Render deployment config
+# Place this file at the project root and Render will auto-detect it.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: life-os-ai
+    runtime: python
+    plan: free                       # free tier — spins down after 15 min idle
+    region: oregon                   # change to frankfurt / singapore if closer
+
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+
+    # On first boot we seed the demo account so reviewers can sign in immediately.
+    # Subsequent boots skip re-seeding (the seeder is idempotent).
+    startCommand: |
+      python seed_data.py
+      gunicorn --workers 2 --bind 0.0.0.0:$PORT --timeout 120 "run:app"
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+
+      - key: FLASK_CONFIG
+        value: production
+
+      # Render generates a strong random value for this on first deploy.
+      - key: SECRET_KEY
+        generateValue: true
+
+      # Optional — uncomment & set in the Render dashboard to enable real AI.
+      # - key: OPENAI_API_KEY
+      #   sync: false
+      # - key: GEMINI_API_KEY
+      #   sync: false
+
+    # Persistent disk so the SQLite DB + uploads survive restarts.
+    # Free tier on Render does NOT include disks — comment this out for the
+    # free plan, or upgrade to "starter" ($7/mo) to keep your data.
+    # disk:
+    #   name: lifeos-data
+    #   mountPath: /opt/render/project/src/instance
+    #   sizeGB: 1
