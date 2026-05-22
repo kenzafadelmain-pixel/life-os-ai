@@ -34,6 +34,8 @@ class BaseConfig:
     # always works without paid keys.
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+    DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+    AI_MODEL_DEEPSEEK = os.environ.get("AI_MODEL_DEEPSEEK", "deepseek-chat")
     AI_MODEL_OPENAI = os.environ.get("AI_MODEL_OPENAI", "gpt-4o-mini")
     AI_MODEL_GEMINI = os.environ.get("AI_MODEL_GEMINI", "gemini-1.5-flash")
 
