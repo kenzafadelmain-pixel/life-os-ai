@@ -18,7 +18,9 @@ def _chatbot() -> AIChatbot:
     return AIChatbot(
         openai_key=cfg["OPENAI_API_KEY"],
         gemini_key=cfg["GEMINI_API_KEY"],
+        deepseek_key=cfg["DEEPSEEK_API_KEY"],
         openai_model=cfg["AI_MODEL_OPENAI"],
+        deepseek_model=cfg["AI_MODEL_DEEPSEEK"],
         gemini_model=cfg["AI_MODEL_GEMINI"],
     )
 
